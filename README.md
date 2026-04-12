@@ -1,7 +1,7 @@
 # IS 215 Final Project: UPOU About Helpdesk
 
 ## 👤 Lead Programmer
-**Bemmygail Abanilla** *Information Technology Student, UPOU*
+**Bemmygail Abanilla** *Master of Information Systems Student, UPOU*
 
 ## 🌐 Live Application
 * **URL:** [https://project.bsabanilla.is215.upou.io](https://project.bsabanilla.is215.upou.io)
