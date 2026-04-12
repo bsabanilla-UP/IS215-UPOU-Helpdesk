@@ -1,11 +1,11 @@
-# IS 215 Final Project: UPOU About Helpdesk
+# IS 215 Final Project: UPOU Helpdesk Deployment Guide
 
 ## 👤 Lead Programmer
 **Bemmygail Abanilla** *Master of Information Systems Student, UPOU*
 
 ## 🌐 Live Application
 * **URL:** [https://project.bsabanilla.is215.upou.io](https://project.bsabanilla.is215.upou.io)
-* **Static IP:** `54.87.124.61`
+* **Elastic IP:** `54.87.124.61`
 
 ---
 
@@ -21,39 +21,38 @@ This application implements a **Retrieval-Augmented Generation (RAG)** architect
 
 ## 🛠 Deployment Manual
 
-### Prerequisites
-* AWS Learner Lab account ($50 Credit limit).
-* OpenAI API Key (Academic provided).
-* AWS `LabRole` permissions for cross-service communication.
+### 1. Environment Initialization
+The project was developed within the **AWS Learner Lab** environment.
+* **Lab Activation:** Monitored AWS status until the indicator turned green.
+* **Regional Standardization:** Set to **us-east-1 (N. Virginia)** for LabRole compatibility.
 
-### Step 1: S3 Knowledge Base Setup
-1. Created a bucket named `is215-project-about-upou-bemmy`.
-2. Organized data into four professional directory structures:
-   * `/institutional-identity/` (About, MVO, Legal Mandates)
-   * `/academic-structure/` (MOT, FOS, Course Development)
-   * `/contact-and-locations/` (Locations, Social Microsites, Mega Learning Hubs)
-   * `/student-services/` (Exam Services, Student Support, Library)
-3. Converted scraped web data into **Markdown (.md)** format to ensure high-density token accuracy for the LLM.
+### 2. Knowledge Base Setup (S3)
+To satisfy the **Data Quality Rubric**, a structured knowledge base was created.
+* **Bucket Creation:** Created private bucket `is215-project-about-upou-bemmy`.
+* **Data Structuring:** Organized into four logical directories:
+  * `/institutional-identity/` (About, MVO, Legal Mandates)
+  * `/academic-structure/` (MOT, FOS, Course Development)
+  * `/contact-and-locations/` (Locations, Social Microsites, Mega Learning Hubs)
+  * `/student-services/` (Exam Services, Student Support, Library)
+* **Formatting:** Converted scraped data into **Markdown (.md)** to ensure structural clarity.
 
-### Step 2: Lambda Middleware Configuration
-1. **Runtime:** Python 3.x.
-2. **Permissions:** Attached the `LabRole` to allow `s3:GetObject` and `s3:ListBucket` actions.
-3. **Environment Variables:**
-   * `S3_BUCKET_NAME`: `is215-project-about-upou-bemmy`
-   * `OPENAI_API_KEY`: [Stored Securely]
-4. **Network:** Enabled **Function URL** with CORS configuration to allow the frontend connection.
+### 3. Middleware Development (Lambda)
+The Lambda function serves as the "brain," brokering communication between the frontend, S3, and OpenAI.
+* **Configuration:** Created `UPOU_Helpdesk_Middleware` using Python 3.12 with **LabRole** permissions.
+* **Validation:** Verified via console test events.
+  * **Query:** "What is the mission of UPOU?"
+  * **Result:** Successful JSON response with accurate mission statement.
 
-### Step 3: EC2 Front-End Hosting
-1. **Instance:** `t3.micro` Ubuntu Server 24.04 LTS.
-2. **Networking:** Associated an **Elastic IP** (`54.87.124.61`) and mapped it to the UPOU subdomain.
-3. **Security:** Implemented SSL/TLS termination using **Certbot (Let's Encrypt)** for HTTPS encryption.
+### 4. Prompt Engineering & Reliability
+To meet the **Accuracy Rubric**, a system prompt was developed to enforce strict knowledge boundaries.
+* **The Persona:** "You are a professional UPOU helpdesk agent."
+* **The Adobo Test:** To verify reliability, the bot was tested with the query: *"How do I cook adobo?"*
+  * **Bot Response:** Successfully refused, staying within UPOU knowledge boundaries.
 
----
-
-## 🛡 Prompt Engineering & Guardrails
-To satisfy the project's **Accuracy and Reliability rubrics**, the following constraints were implemented:
-* **Knowledge Boundary:** The system is instructed to use *only* the provided S3 context. 
-* **The Adobo Test:** A hard-coded negative constraint ensures the bot refuses off-topic requests (e.g., cooking recipes), maintaining its professional utility.
+### 5. Web Hosting & Security (EC2)
+* **Instance Setup:** Launched Ubuntu-based `t3.micro` instance.
+* **Static Connectivity:** Associated **Elastic IP** (`54.87.124.61`) and mapped to official subdomain.
+* **Security:** Implemented SSL/TLS termination using **Certbot (Let's Encrypt)** for HTTPS encryption.
 
 ---
 
@@ -61,13 +60,13 @@ To satisfy the project's **Accuracy and Reliability rubrics**, the following con
 ```text
 .
 ├── backend/
-│   └── lambda_function.py        # Middleware logic
+│   └── lambda_function.py        # Middleware logic (Python/Boto3)
 ├── frontend/
-│   └── index.html               # Chat interface & Fetch logic
+│   └── index.html                # Chat interface & Fetch logic
 ├── knowledge-base/
 │   ├── academic-structure/       # MOT, FOS, Course Dev
 │   ├── contact-and-locations/    # Hubs, Social, Locations
 │   ├── institutional-identity/   # About, MVO, Legal
 │   └── student-services/         # Exam, Library, Support
-├── .gitignore                    # Prevents .pem upload
+├── .gitignore                    # Prevents .pem and system files upload
 └── README.md                     # Documentation
