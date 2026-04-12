@@ -28,10 +28,11 @@ This application implements a **Retrieval-Augmented Generation (RAG)** architect
 
 ### Step 1: S3 Knowledge Base Setup
 1. Created a bucket named `is215-project-about-upou-bemmy`.
-2. Organized data into professional directory structures:
-   * `/institutional-identity/` (Mission, Vision, History)
-   * `/academic-structure/` (Faculties and Offices)
-   * `/student-services/` (Support and Hubs)
+2. Organized data into four professional directory structures:
+   * `/institutional-identity/` (About, MVO, Legal Mandates)
+   * `/academic-structure/` (MOT, FOS, Course Development)
+   * `/contact-and-locations/` (Locations, Social Microsites, Mega Learning Hubs)
+   * `/student-services/` (Exam Services, Student Support, Library)
 3. Converted scraped web data into **Markdown (.md)** format to ensure high-density token accuracy for the LLM.
 
 ### Step 2: Lambda Middleware Configuration
@@ -40,42 +41,33 @@ This application implements a **Retrieval-Augmented Generation (RAG)** architect
 3. **Environment Variables:**
    * `S3_BUCKET_NAME`: `is215-project-about-upou-bemmy`
    * `OPENAI_API_KEY`: [Stored Securely]
-4. **Network:** Enabled **Function URL** with CORS configuration:
-   * `Allow-Origin`: `*`
-   * `Allow-Headers`: `content-type`
-   * `Allow-Methods`: `POST`
+4. **Network:** Enabled **Function URL** with CORS configuration to allow the frontend connection.
 
 ### Step 3: EC2 Front-End Hosting
-1. **Instance:** `t3.micro` Ubuntu Server 24.04 LTS named `IS215-Project`.
-2. **Networking:**
-   * Allocated and associated an **Elastic IP** (`54.87.124.61`) to ensure persistence.
-   * Mapped the IP to the subdomain `project.bsabanilla.is215.upou.io`.
-3. **Automation:** Utilized **User Data** scripts to automatically install and enable the Apache2 web server upon launch.
-4. **Security:** Implemented SSL/TLS termination using **Certbot (Let's Encrypt)** for HTTPS encryption.
+1. **Instance:** `t3.micro` Ubuntu Server 24.04 LTS.
+2. **Networking:** Associated an **Elastic IP** (`54.87.124.61`) and mapped it to the UPOU subdomain.
+3. **Security:** Implemented SSL/TLS termination using **Certbot (Let's Encrypt)** for HTTPS encryption.
 
 ---
 
 ## 🛡 Prompt Engineering & Guardrails
 To satisfy the project's **Accuracy and Reliability rubrics**, the following constraints were implemented:
-
-* **Persona:** The AI is strictly defined as a "Professional UPOU Helpdesk Agent."
-* **Knowledge Boundary:** The system is instructed to use *only* the provided S3 context. If information is missing, it must offer to create a support ticket rather than guess.
+* **Knowledge Boundary:** The system is instructed to use *only* the provided S3 context. 
 * **The Adobo Test:** A hard-coded negative constraint ensures the bot refuses off-topic requests (e.g., cooking recipes), maintaining its professional utility.
 
 ---
 
 ## 📂 Project Structure
-* `index.html` - Responsive web interface with AJAX/Fetch logic.
-* `lambda_function.py` - Backend logic for S3 crawling and OpenAI brokering.
-* `/knowledge-base` - Source Markdown files used for RAG context.
-* `.gitignore` - Configured to prevent the accidental upload of `.pem` keys.
-
----
-
-## 🔐 Security Note
-The instance is accessed exclusively via a private SSH key (`bemmy-is215-key`). This key is stored securely off-cloud and is **not** included in this repository to prevent unauthorized access.
-
----
-
-**Course:** IS 215 - Information Management  
-**University:** University of the Philippines Open University
+```text
+.
+├── backend/
+│   └── lambda_function.py        # Middleware logic
+├── frontend/
+│   └── index.html               # Chat interface & Fetch logic
+├── knowledge-base/
+│   ├── academic-structure/       # MOT, FOS, Course Dev
+│   ├── contact-and-locations/    # Hubs, Social, Locations
+│   ├── institutional-identity/   # About, MVO, Legal
+│   └── student-services/         # Exam, Library, Support
+├── .gitignore                    # Prevents .pem upload
+└── README.md                     # Documentation
