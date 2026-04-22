@@ -1,8 +1,5 @@
 # IS 215 Final Project: UPOU Helpdesk Deployment Guide
 
-## 👤 Lead Programmer
-**Bemmygail Abanilla** *Master of Information Systems Student, UPOU*
-
 ## 🌐 Live Application
 * **URL:** [https://project.bsabanilla.is215.upou.io](https://project.bsabanilla.is215.upou.io)
 * **Elastic IP:** `54.87.124.61`
