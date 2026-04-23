@@ -1,59 +1,245 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>UPOU AI Helpdesk</title>
     <style>
-        body { font-family: Arial; background: #f4f4f4; padding: 20px; }
-        #chat-container { max-width: 600px; margin: auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0px 0px 10px #ccc; }
-        #chat-history { height: 400px; overflow-y: auto; border: 1px solid #ddd; padding: 10px; margin-bottom: 10px; }
-        .user { text-align: right; color: blue; }
-        .bot { text-align: left; color: green; }
-        .source-tag { font-size: 0.8em; color: gray; display: block; }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: Arial, sans-serif;
+            background: #f4f4f4;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        #chat-container {
+            max-width: 640px;
+            margin: auto;
+            background: white;
+            padding: 24px;
+            border-radius: 10px;
+            box-shadow: 0px 0px 10px #ccc;
+        }
+
+        h2 {
+            margin-bottom: 16px;
+            font-size: 1.3rem;
+            color: #333;
+        }
+
+        #chat-history {
+            height: 400px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            padding: 12px;
+            margin-bottom: 10px;
+            border-radius: 6px;
+            background: #fafafa;
+        }
+
+        .message {
+            margin-bottom: 12px;
+            line-height: 1.5;
+        }
+
+        .user {
+            text-align: right;
+            color: #1a56db;
+        }
+
+        .bot {
+            text-align: left;
+            color: #1a6e3a;
+        }
+
+        .error-msg {
+            text-align: left;
+            color: #c0392b;
+        }
+
+        /* Source tag shown on bot messages */
+        .source-tag {
+            font-size: 0.75em;
+            color: #888;
+            display: block;
+            margin-bottom: 2px;
+        }
+
+        #loading {
+            font-size: 0.9em;
+            color: #888;
+            font-style: italic;
+            margin-bottom: 8px;
+            min-height: 1.2em; /* prevent layout shift */
+        }
+
+        #input-row {
+            display: flex;
+            gap: 8px;
+        }
+
+        #user-input {
+            flex: 1;
+            padding: 8px 12px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            font-size: 1rem;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        #user-input:focus {
+            border-color: #1a56db;
+        }
+
+        #user-input:disabled {
+            background: #f0f0f0;
+            cursor: not-allowed;
+        }
+
+        #send-btn {
+            padding: 8px 18px;
+            background: #1a56db;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        #send-btn:hover:not(:disabled) {
+            background: #1447b8;
+        }
+
+        #send-btn:disabled {
+            background: #a0b4e8;
+            cursor: not-allowed;
+        }
     </style>
 </head>
 <body>
     <div id="chat-container">
-        <h2>UPOU About Helpdesk</h2>
+        <h2>UPOU AI Helpdesk</h2>
         <div id="chat-history"></div>
-        <div id="loading" style="display:none;">AI is thinking...</div>
-        <input type="text" id="user-input" style="width:80%;" placeholder="Ask about UPOU...">
-        <button onclick="sendMessage()">Send</button>
+        <div id="loading"></div>
+        <div id="input-row">
+            <input
+                type="text"
+                id="user-input"
+                placeholder="Ask about UPOU..."
+                autocomplete="off"
+            >
+            <button id="send-btn" onclick="sendMessage()">Send</button>
+        </div>
     </div>
 
     <script>
-async function sendMessage() {
-            const input = document.getElementById('user-input');
-            const history = document.getElementById('chat-history');
-            const loading = document.getElementById('loading');
-            const question = input.value;
+        const LAMBDA_URL = 'https://ukwgddanub74pfw7ryjc3f77zm0fqjhq.lambda-url.us-east-1.on.aws/';
 
+        // Allow sending with Enter key
+        document.getElementById('user-input').addEventListener('keydown', function (e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        });
+
+        function setLoading(isLoading) {
+            const loading  = document.getElementById('loading');
+            const input    = document.getElementById('user-input');
+            const sendBtn  = document.getElementById('send-btn');
+
+            loading.textContent   = isLoading ? 'AI is thinking...' : '';
+            input.disabled        = isLoading;
+            sendBtn.disabled      = isLoading;
+        }
+
+        function appendMessage(role, text, sourceTag) {
+            const history = document.getElementById('chat-history');
+            const p = document.createElement('p');
+            p.classList.add('message', role);
+
+            if (sourceTag) {
+                const tag = document.createElement('span');
+                tag.classList.add('source-tag');
+                tag.textContent = sourceTag;
+                p.appendChild(tag);
+            }
+
+            const label = document.createElement('b');
+            label.textContent = role === 'user' ? 'You: ' : 'Bot: ';
+            p.appendChild(label);
+
+            // Use textContent via a span to avoid XSS from bot/user content
+            const content = document.createElement('span');
+            content.textContent = text;
+            p.appendChild(content);
+
+            history.appendChild(p);
+            history.scrollTop = history.scrollHeight;
+        }
+
+        function appendError(text) {
+            const history = document.getElementById('chat-history');
+            const p = document.createElement('p');
+            p.classList.add('message', 'error-msg');
+            p.textContent = text;
+            history.appendChild(p);
+            history.scrollTop = history.scrollHeight;
+        }
+
+        async function sendMessage() {
+            const input    = document.getElementById('user-input');
+            const question = input.value.trim();
             if (!question) return;
 
-            history.innerHTML += `<p class="user"><b>You:</b> ${question}</p>`;
+            // Show user message and clear input immediately
+            appendMessage('user', question);
             input.value = '';
-            loading.style.display = 'block';
+            setLoading(true);
 
             try {
-                const response = await fetch('https://ukwgddanub74pfw7ryjc3f77zm0fqjhq.lambda-url.us-east-1.on.aws/', {
+                const response = await fetch(LAMBDA_URL, {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ "question": question })
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ question })
                 });
 
-                const data = await response.json();
-                // Lambda Function URLs often wrap the response in a 'body' string
-                const result = typeof data.body === 'string' ? JSON.parse(data.body) : data;
+                // Check HTTP status before attempting JSON parse
+                if (!response.ok) {
+                    throw new Error(`Server error: HTTP ${response.status}`);
+                }
 
-                history.innerHTML += `<p class="bot"><span class="source-tag">[Official Policy Source]</span><b>Bot:</b> ${result.answer}</p>`;
+                const data = await response.json();
+
+                // Lambda Function URLs may wrap the body as a JSON string
+                const result = typeof data.body === 'string'
+                    ? JSON.parse(data.body)
+                    : data;
+
+                if (!result.answer) {
+                    throw new Error('Received empty answer from server.');
+                }
+
+                // Determine source tag based on answer content
+                // The Lambda uses official UPOU docs as context; if it says
+                // "I don't know", tag it as General Knowledge, otherwise Official Policy.
+                const isUncertain = /don't know|cannot find|not sure|no information|support ticket/i.test(result.answer);
+                const tag = isUncertain ? '[General Knowledge]' : '[Official Policy Source]';
+
+                appendMessage('bot', result.answer, tag);
+
             } catch (error) {
-                console.error("Connection Error:", error);
-                history.innerHTML += `<p style="color:red;">Error connecting to helpdesk. Check console for details.</p>`;
+                console.error('Connection Error:', error);
+                appendError('Error connecting to helpdesk. Please try again.');
+            } finally {
+                // Always runs — loading is cleared even if an error was thrown
+                setLoading(false);
+                document.getElementById('user-input').focus();
             }
-            
-            loading.style.display = 'none';
-            history.scrollTop = history.scrollHeight;
         }
     </script>
 </body>
